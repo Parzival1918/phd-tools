@@ -110,7 +110,7 @@
           version = "2.3.1";
 
           buildInputs = [
-            pkgs.gfortran7
+            pkgs.gfortran
           ];
 
           src = pkgs.fetchFromGitLab {
@@ -124,10 +124,13 @@
             sed -i 's/FC=ifort/FC=gfortran/' ./makefile
             sed -i 's/fflags0="-g -check"/fflags0="-g -fbacktrace -fcheck=all"/' ./makefile
             sed -i 's/fflags3="-O3"/fflags3="-O3"/' ./makefile
+            cat ./makefile
+            exit 1
           '';
 
           installPhase = ''
             ls -l
+            exit 1
             mkdir -p $out/bin
             cp neighcrys.out $out/bin/neighcrys
           '';
@@ -155,10 +158,9 @@
           '';
 
           installPhase = ''
-            ls -l O3
-            ls -l O0
             mkdir -p $out/bin
             cp dmacrys.out $out/bin/dmacrys
+            cp dmacrysO0.out $out/bin/dmacrysO0
           '';
         };
       }
