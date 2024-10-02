@@ -123,16 +123,15 @@
           preBuild = ''
             sed -i 's/FC=ifort/FC=gfortran/' ./makefile
             sed -i 's/fflags0="-g -check"/fflags0="-g -fbacktrace -fcheck=all"/' ./makefile
+            sed -i 's/$(FC) -o neighcrys.out $(fflags3) $(ffiles) $(cfiles)/$(FC) -o neighcrys.out $(fflags) $(ffiles) $(cfiles)/' ./makefile
+            sed -i 's/$(FC) -o neighcrysO0.out $(fflags0) $(ffiles) $(cfiles)/$(FC) -o neighcrysO0.out $(fflags) $(ffiles) $(cfiles)/' ./makefile
             sed -i 's/fflags3="-O3"/fflags3="-O3"/' ./makefile
-            cat ./makefile
-            exit 1
           '';
 
           installPhase = ''
-            ls -l
-            exit 1
             mkdir -p $out/bin
             cp neighcrys.out $out/bin/neighcrys
+            cp neighcrysO0.out $out/bin/neighcrysO0
           '';
         };
 
