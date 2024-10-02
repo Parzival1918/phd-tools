@@ -12,7 +12,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        packages.gdma = pkgs.stdenv.mkDerivation rec {
+        packages.gdma = pkgs.stdenv.mkDerivation {
           pname = "gdma";
           version = "2.3";
 
@@ -78,6 +78,30 @@
           installPhase = ''
             mkdir -p $out/bin
             cp bin/gdma $out/bin
+          '';
+        };
+
+        packages.mulfit = pkgs.stdenv.mkDerivation {
+          pname = "mulfit";
+          version = "2.1";
+
+          src = pkgs.fetchzip {
+            url = "https://gitlab.com/anthonyjs/gdma/-/raw/master/mulfit-2.1.tgz?ref_type=heads";
+            extension = ".tgz";
+            sha256 = "sha256-tX5V5M5hgSRgniot990JgOjNot5E+6ourhX/SEZGYuA=";
+          };
+
+          buildInputs = [
+            pkgs.gfortran
+          ];
+
+          preBuild = ''
+            patchShebangs ./src/compile.sh
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp mulfit $out/bin
           '';
         };
       }
