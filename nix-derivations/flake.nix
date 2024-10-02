@@ -104,6 +104,63 @@
             cp mulfit $out/bin
           '';
         };
+
+        packages.neighcrys = pkgs.stdenv.mkDerivation {
+          pname = "neighcrys";
+          version = "2.3.1";
+
+          buildInputs = [
+            pkgs.gfortran7
+          ];
+
+          src = pkgs.fetchFromGitLab {
+            owner = "mol-cspy";
+            repo = "neighcrys";
+            rev = "4591d8a27f1d202df5fc0185de895225073a7dae";
+            sha256 = "sha256-wOM8W76HpctZq5hKOThAQ7bO7JEzNFfs4jN1ECgAr9U=";
+          };
+
+          preBuild = ''
+            sed -i 's/FC=ifort/FC=gfortran/' ./makefile
+            sed -i 's/fflags0="-g -check"/fflags0="-g -fbacktrace -fcheck=all"/' ./makefile
+            sed -i 's/fflags3="-O3"/fflags3="-O3"/' ./makefile
+          '';
+
+          installPhase = ''
+            ls -l
+            mkdir -p $out/bin
+            cp neighcrys.out $out/bin/neighcrys
+          '';
+        };
+
+        packages.dmacrys = pkgs.stdenv.mkDerivation {
+          pname = "dmacrys";
+          version = "2.3.1";
+
+          buildInputs = [
+            pkgs.gfortran7
+          ];
+
+          src = pkgs.fetchFromGitLab {
+            owner = "mol-cspy";
+            repo = "dmacrys";
+            rev = "badbb0381ce7602ccf9f83718a1a3029e72add5d";
+            sha256 = "sha256-Uo8JxYE2ZTilGDniZ3ZG6/wT8fxB4YBO/QZ7d0aAH48=";
+          };
+
+          preBuild = ''
+            sed -i 's/FC=ifort/FC=gfortran/' ./makefile
+            sed -i 's/fflags0="-g -check -Wall -fbounds-check"/fflags0="-g -fbacktrace -fcheck=all"/' ./makefile
+            sed -i 's/fflags3="-O3 -static"/fflags3="-O3"/' ./makefile
+          '';
+
+          installPhase = ''
+            ls -l O3
+            ls -l O0
+            mkdir -p $out/bin
+            cp dmacrys.out $out/bin/dmacrys
+          '';
+        };
       }
     );
 }
