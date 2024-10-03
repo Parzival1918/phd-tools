@@ -165,18 +165,29 @@
 
         packages.platon = pkgs.stdenv.mkDerivation {
           pname = "platon";
-          version = "";
+          version = "x";
 
-          src = pkgs.fetchurl {
-            url = "https://www.platonsoft.nl/xraysoft/unix/platon/";
+          buildInputs = [
+            pkgs.gfortran
+            pkgs.xorg.libX11
+          ];
+
+          src = pkgs.fetchzip {
+            url = "https://www.platonsoft.nl/xraysoft/unix/platon.tar.gz";
             curlOpts = "--insecure";
-            name = "contents";
-            sha256 = "sha256-s7QCiG4wkoMa5Yp4uz/P20K4wwXClZD1M3f9vKgkkf0=";
+            sha256 = "sha256-BqWsTgkO4zx6zAoIVqd1R+Q+liL6RwbeP596sv9DmQM=";
           };
 
-          unpackPhase = ''
-            ls -l
-            exit 1
+          buildPhase = ''
+            echo "Unpacking source files..."  
+            gzip -d platon.f.gz
+            gzip -d xdrvr.c.gz
+            gfortran -O3 -o platon platon.f xdrvr.c -lX11
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp platon $out/bin
           '';
         };
       }
