@@ -190,6 +190,36 @@
             cp platon $out/bin
           '';
         };
+
+        packages.pmin = pkgs.stdenv.mkDerivation {
+          pname = "pmin";
+          version = "x";
+
+          buildInputs = [
+            pkgs.gfortran10
+          ];
+
+          src = pkgs.fetchzip { # The source code is taken from MOLPAK
+            url = "https://sourceforge.net/projects/molpak/files/Molpak/PREDICTIONS.tar.gz";
+            sha256 = "sha256-h8DGU6PsBJbDFrrGRx+fPTA/pujChVZpUQHcDQOb9EI=";
+          };
+
+          buildPhase = ''
+            cd PMIN
+            rm -f *.o
+            rm -f *.mod
+            rm -f pmin.exe
+            gfortran -O3 -c f77kinds.f90
+            gfortran -O3 -c *module.f90 f77kinds.o
+            gfortran -O3 -std=legacy -c pmin_26oct10.f90
+            gfortran -O3 -o pmin *.o
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp pmin $out/bin
+          '';
+        };
       }
     );
 }
