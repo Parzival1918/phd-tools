@@ -162,6 +162,23 @@
             cp dmacrysO0.out $out/bin/dmacrysO0
           '';
         };
+
+        packages.platon = pkgs.stdenv.mkDerivation {
+          pname = "platon";
+          version = "";
+
+          src = pkgs.fetchurl {
+            url = "https://www.platonsoft.nl/xraysoft/unix/platon/";
+            curlOpts = "--insecure";
+            name = "contents";
+            sha256 = "sha256-s7QCiG4wkoMa5Yp4uz/P20K4wwXClZD1M3f9vKgkkf0=";
+          };
+
+          unpackPhase = ''
+            ls -l
+            exit 1
+          '';
+        };
       }
     );
 }
