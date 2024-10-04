@@ -5,6 +5,7 @@
       flake-utils.url = "github:numtide/flake-utils";
       nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
       phd-derivations.url = "./nix-derivations";
+      dev-shells.url = "./dev-shells";
   };
 
   outputs = { self, flake-utils, ... }@inputs:
@@ -12,9 +13,15 @@
     let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
       phd-packages = inputs.phd-derivations.packages.${system};
+      dev-shells = inputs.dev-shells.devShells.${system};
     in
     {
       packages = phd-packages;
+
+      devShells = {
+        inherit (dev-shells) fortran;
+        inherit (dev-shells) rust;
+      };
 
       devShells.cspy-external = pkgs.mkShell {
         name = "cspy-external";
