@@ -24,13 +24,17 @@
         nativeBuildInputs = [
           pkgs.gfortran10
           pkgs.gnumake
+          pkgs.fortran-fpm
         ];
 
         shellHook = ''
+          alias fpm="${pkgs.fortran-fpm}/bin/fortran-fpm"
+
           echo "Entered the fortran shell"
           echo "Available packages:"
           echo " - gfortran"
           echo " - make"
+          echo " - fpm (alias of fortran-fpm)"
         '';
       };
 

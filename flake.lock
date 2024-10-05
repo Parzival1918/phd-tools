@@ -8,12 +8,12 @@
       },
       "locked": {
         "lastModified": 1,
-        "narHash": "sha256-cS1iaY9y20/89Oq9Z9hTEZKRZKcNVGPkJDpWG6mP0QE=",
-        "path": "/nix/store/i19wp5xk0992xs1ng78cdr71g9kpyxdh-source/dev-shells",
+        "narHash": "sha256-uJxAuiqdWWbi98gyAqFRTeeKeDfbbvMxePDDCsAAoBg=",
+        "path": "/nix/store/yyx71b3d7hbyvn8k9izhw1cnsghv2hky-source/dev-shells",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/i19wp5xk0992xs1ng78cdr71g9kpyxdh-source/dev-shells",
+        "path": "/nix/store/yyx71b3d7hbyvn8k9izhw1cnsghv2hky-source/dev-shells",
         "type": "path"
       }
     },
@@ -143,11 +143,11 @@
       "locked": {
         "lastModified": 1,
         "narHash": "sha256-HTVZ0m8U3Xv6nRSTvcXNoqEXCTsJ2FIoufCelYnMvPU=",
-        "path": "/nix/store/i19wp5xk0992xs1ng78cdr71g9kpyxdh-source/nix-derivations",
+        "path": "/nix/store/yyx71b3d7hbyvn8k9izhw1cnsghv2hky-source/nix-derivations",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/i19wp5xk0992xs1ng78cdr71g9kpyxdh-source/nix-derivations",
+        "path": "/nix/store/yyx71b3d7hbyvn8k9izhw1cnsghv2hky-source/nix-derivations",
         "type": "path"
       }
     },
