@@ -25,6 +25,7 @@
           pkgs.gfortran10
           pkgs.gnumake
           pkgs.fortran-fpm
+          pkgs.fortls
         ];
 
         shellHook = ''
@@ -35,6 +36,7 @@
           echo " - gfortran"
           echo " - make"
           echo " - fpm (alias of fortran-fpm)"
+          echo " - fortls (language server)"
         '';
       };
 
