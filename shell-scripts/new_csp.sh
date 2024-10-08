@@ -153,6 +153,7 @@ print(\"Landscape saved to Landscape.png\")
 	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3} ${FOLDER_4} ${FOLDER_5} ${FOLDER_6}
 
 	# create contents of FOLDER_1
+	cp ../${MOLECULE_XYZ} ${FOLDER_1}/${MOLECULE}_original.xyz
 	echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${MOLECULE}.com
 	tail -n +3 ../${MOLECULE_XYZ} >> ${FOLDER_1}/${MOLECULE}.com
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com # adding two empty lines at end for format requirements
