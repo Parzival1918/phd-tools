@@ -19,6 +19,12 @@ by Pedro Juan Royo
 	PROJ_FOLDER=${1:?"${HELP_STR}"}
 	MOLECULE_XYZ=${2:?"${HELP_STR}"}
 	MOLECULE=${MOLECULE_XYZ%.xyz}
+	EXTENSION=${MOLECULE_XYZ##*.}
+
+	if [ ${EXTENSION} != "xyz" ]; then
+		echo "ERROR: Extension of '${MOLECULE_XYZ}' is not .xyz"
+		return 1
+	fi
 
 	# default and take settings from env vars
 	GAUSSIAN_CPUS=${GAUSSIAN_CPUS:-"4"}

@@ -6,6 +6,7 @@
       nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
       phd-derivations.url = "./nix-derivations";
       dev-shells.url = "./dev-shells";
+      shell-scripts.url = "./shell-scripts";
   };
 
   outputs = { self, flake-utils, ... }@inputs:
@@ -14,6 +15,7 @@
       pkgs = inputs.nixpkgs.legacyPackages.${system};
       phd-packages = inputs.phd-derivations.packages.${system};
       dev-shells = inputs.dev-shells.devShells.${system};
+      shell-scripts = inputs.shell-scripts.packages.${system};
     in
     {
       packages = phd-packages;
@@ -44,6 +46,20 @@
           echo " - dmacrys"
           echo " - pmin"
           echo " - platon"
+        '';
+      };
+
+      devShells.shell-scripts = pkgs.mkShell {
+        name = "shell-scripts";
+
+        nativeBuildInputs = [
+          shell-scripts.new-csp
+        ];
+
+        shellHook = ''
+          echo "Entered the chell-scripts shell"
+          echo "Available packages:"
+          echo " - new-csp"
         '';
       };
     }

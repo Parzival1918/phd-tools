@@ -15,15 +15,28 @@
       packages.new-csp = pkgs.stdenv.mkDerivation {
         name = "new-csp";
 
-        src = ./new_csp.sh;
+        src = [
+          ./new_csp.sh
+        ];
+
+        unpackPhase = ''
+          for srcFile in $src; do
+            cp $srcFile $(stripHash $srcFile)
+          done
+          ls -al
+        '';
 
         buildPhase = ''
-            
+          echo "#!${pkgs.bash}/bin/bash" > script.sh
+          cat ./new_csp.sh >> script.sh
+          echo "" >> script.sh
+          echo "new-csp \$@" >> script.sh
         '';
 
         installPhase = ''
             mkdir -p $out/bin
-            cp ./new_csp.sh $out/bin/
+            cp ./script.sh $out/bin/new-csp
+            chmod +x $out/bin/new-csp
         '';
       };
     }
