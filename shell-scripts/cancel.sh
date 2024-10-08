@@ -6,10 +6,10 @@ function cancel {
 
    # Get IDs and names of all jobs running and queuing     
    data_col=$(squeue -u $USER --format="%.15i %.8j %.2t" -h | awk '{print $1}')
-   read -a ids_arr <<< $data_col
+   ids_arr=($data_col)
 
    data_col=$(squeue -u $USER --format="%.15i %.8j %.2t" -h | awk '{print $2}')
-   read -a names_arr <<< $data_col
+   names_arr=($data_col)
 
 
    # printe the id-name of each job
