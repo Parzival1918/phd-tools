@@ -103,23 +103,35 @@ import matplotlib.pyplot as plt
 
 
 db = CspDataStore(sys.argv[1])
-x_and_y = [item for item in db.query(\"select energy, density from crystal where id like '%-3'\").fetchall()]
+data = [item for item in db.query(\"select energy, density, spacegroup from crystal where id like '%-3'\").fetchall()]
 
-plt.figure()
-x = [item[1] for item in x_and_y]
-y = [item[0] for item in x_and_y]
-plt.scatter(x,
-            [item - min(y) for item in y],
-            s=10,
-            edgecolor='k',
-            c='b'
-            )
+sgs = {}
+for y, x, sg in data:
+    if sg in sgs:
+        sgs[sg].append([x, y])
+    else:
+        sgs[sg] = [[x,y]]
+
+fig, ax = plt.subplots()
+c=0
+for sg in sgs:
+    ax.scatter(
+        x=[a[0] for a in sgs[sg]],
+        y=[b[1] for b in sgs[sg]],
+        label=sg,
+        s=10,
+        edgecolor='k',
+    )
+    c += 1
+
 plt.xlabel('Density (g cm$^{-3}$)')
 plt.ylabel('Relative Energy (kJ mol$^{-1}$)')
 plt.legend()
 plt.tight_layout()
 plt.savefig('Landscape.png', dpi=600)
-	" # taken from https://mol-cspy.readthedocs.io/en/latest/bb_wikipages/Scripts%20for%20CSPy.html
+
+print(\"Landscape saved to Landscape.png\")
+	" # inspired from https://mol-cspy.readthedocs.io/en/latest/bb_wikipages/Scripts%20for%20CSPy.html
 
 	if [ -d "${PROJ_FOLDER}" ]; then
 		echo "ERROR: Folder with name '${PROJ_FOLDER}' already exists"
