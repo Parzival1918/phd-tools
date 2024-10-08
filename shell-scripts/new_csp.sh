@@ -103,7 +103,7 @@ import matplotlib.pyplot as plt
 
 
 db = CspDataStore(sys.argv[1])
-x_and_y = [item for item in db.query("select energy, density from crystal where id like '%-3'").fetchall()]
+x_and_y = [item for item in db.query(\"select energy, density from crystal where id like '%-3'\").fetchall()]
 
 plt.figure()
 x = [item[1] for item in x_and_y]
@@ -207,7 +207,7 @@ unique ones (named output.db by default).
 
 Analyse the structures in the database in multiple ways:
 
-- `plot_csp_landscape.py [DATABASE]` Creates a Landscape.png 
+- \`plot_csp_landscape.py [DATABASE]\` Creates a Landscape.png 
 file of the Relative Energy vs Density of the structures.
 	" > README.md 
 	cd ..
@@ -228,4 +228,6 @@ accurate energy methods.
 
 	# return to initial folder
 	cd ..
+
+	echo "Created the project in '${PROJ_FOLDER}'" 
 }
