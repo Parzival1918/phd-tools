@@ -115,9 +115,11 @@ for y, x, sg in data:
 fig, ax = plt.subplots()
 c=0
 for sg in sgs:
+    x=[a[0] for a in sgs[sg]]
+    y=[a[1] for a in sgs[sg]]
     ax.scatter(
-        x=[a[0] for a in sgs[sg]],
-        y=[b[1] for b in sgs[sg]],
+        x=x,
+        y=[i - min(y) for i in y],
         label=sg,
         s=10,
         edgecolor='k',
