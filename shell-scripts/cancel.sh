@@ -1,14 +1,14 @@
 function cancel {
-   item_count=$(sacct --format=state |grep "PENDING\|RUNNING" |wc -l)
+   item_count=$(squeue -u $USER --format="%.15i %.8j %.2t" -h | wc -l)
    if (( item_count == 0 )); then
            tput setaf 3; tput bold; printf "No PENDING or RUNNING jobs\n"; tput sgr0; return 1
    fi
 
    # Get IDs and names of all jobs running and queuing     
-   data_col=$(sacct --format=jobid,jobname%40,state |tail -n+3 |grep -Fv '.' |grep "PENDING\|RUNNING" |awk '{print $1}')
+   data_col=$(squeue -u $USER --format="%.15i %.8j %.2t" -h | awk '{print $1}')
    read -a ids_arr <<< $data_col
 
-   data_col=$(sacct --format=jobid,jobname%40,state |tail -n+3 |grep -Fv '.' |grep "PENDING\|RUNNING" |awk '{print $2}')
+   data_col=$(squeue -u $USER --format="%.15i %.8j %.2t" -h | awk '{print $2}')
    read -a names_arr <<< $data_col
 
 
