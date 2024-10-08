@@ -87,6 +87,39 @@ AXIS=\${MOL_NAME}.mols
 
 mpiexec csp \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -g fine10
 	"
+	REMOVE_DUPLICATES_SCRIPT="#!/bin/bash
+
+source ~/.bashrc
+conda activate cspy
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+cspy-db cluster ${MOLECULE}-*.db
+	"
+	PLOT_CSP_LANDSCAPE_SCRIPT="from cspy.db.datastore import CspDataStore
+import sys
+import matplotlib.pyplot as plt
+
+
+db = CspDataStore(sys.argv[1])
+x_and_y = [item for item in db.query("select energy, density from crystal where id like '%-3'").fetchall()]
+
+plt.figure()
+x = [item[1] for item in x_and_y]
+y = [item[0] for item in x_and_y]
+plt.scatter(x,
+            [item - min(y) for item in y],
+            s=10,
+            edgecolor='k',
+            c='b'
+            )
+plt.xlabel('Density (g cm$^{-3}$)')
+plt.ylabel('Relative Energy (kJ mol$^{-1}$)')
+plt.legend()
+plt.tight_layout()
+plt.savefig('Landscape.png', dpi=600)
+	" # taken from https://mol-cspy.readthedocs.io/en/latest/bb_wikipages/Scripts%20for%20CSPy.html
 
 	if [ -d "${PROJ_FOLDER}" ]; then
 		echo "ERROR: Folder with name '${PROJ_FOLDER}' already exists"
@@ -111,11 +144,30 @@ mpiexec csp \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -g fine10
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com # adding two empty lines at end for format requirements
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com
 	echo "${GAUSSIAN_JOB_SCRIPT}" > ${FOLDER_1}/job_submit.sh
+	echo "# ${FOLDER_1}
+
+Step consists in relaxing the molecule structure in the gas phase.
+The g09 software is used, and an input .com file must be created
+from the .xyz data of the molecule.
+
+The resulting relaxed structure of the molecule will be used in 
+the next step to create the multipoles using gdma.
+	" > ${FOLDER_1}/README.md 
 
 	# create contents of FOLDER_2
 	cd ${FOLDER_2}
 	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
 	echo "${DMA_ANALYSIS_SCRIPT}" > dma_analysis.sh
+	echo "# ${FOLDER_2}
+
+Step consists in creating the multipoles of the molecule that has
+been relaxed in the previous step (${FOLDER_1}). This should 
+produce the files: 
+
+1. NAME.mols (Molecular axis definition in NEIGHCRYS/DMACRYS format)
+2. NAME.dma (Molecular multipoles file)
+3. NAME_rank0.dma (Molecular charges)
+	" > README.md 
 	cd ..
 
 	# create contents of FOLDER_3
@@ -125,5 +177,55 @@ mpiexec csp \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -g fine10
 	ln -s ../${FOLDER_2}/${MOLECULE}_rank0.dma ${MOLECULE}_rank0.dma
 	ln -s ../${FOLDER_2}/${MOLECULE}.mols ${MOLECULE}.mols
 	echo "${CSP_JOB_SCRIPT}" > job_submit.sh
+	echo "# ${FOLDER_3}
+
+This is the CSP step in which crystals are created with a QR
+algorithm and are minimised (minimisation steps defined in 
+cspy.toml file). Usually constrain the search of space groups
+to top 10 most common from CSD (use CLI opt: -g fine10).
+	" > README.md 
+	cd ..
+
+	# create contents of FOLDER_4
+	cd ${FOLDER_4}
+	ln -s ../${FOLDER_3}/${MOLECULE}-*.db ./
+	echo "${REMOVE_DUPLICATES_SCRIPT}" > remove_duplicates.sh
+	echo "# ${FOLDER_4}
+
+This is the step after all candidate structures have been
+generated. Now we compare all of them to make sure that there
+are no duplicates and create another database containing the 
+unique ones (named output.db by default).
+	" > README.md 
+	cd ..
+
+	# create contents of FOLDER_5
+	cd ${FOLDER_5}
+	ln -s ../${FOLDER_4}/output.db ./
+	echo "${PLOT_CSP_LANDSCAPE_SCRIPT}" > plot_csp_landscape.py
+	echo "# ${FOLDER_4}
+
+Analyse the structures in the database in multiple ways:
+
+- `plot_csp_landscape.py [DATABASE]` Creates a Landscape.png 
+file of the Relative Energy vs Density of the structures.
+	" > README.md 
+	cd ..
+
+	# create contents of FOLDER_6
+	cd ${FOLDER_6}
+	ln -s ../${FOLDER_4}/output.db ./
+	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
+	ln -s ../${FOLDER_2}/${MOLECULE}.dma ${MOLECULE}.dma
+	ln -s ../${FOLDER_2}/${MOLECULE}_rank0.dma ${MOLECULE}_rank0.dma
+	ln -s ../${FOLDER_2}/${MOLECULE}.mols ${MOLECULE}.mols
+	echo "# ${FOLDER_6}
+
+Reoptimise any promising low energy structures using more
+accurate energy methods.
+	" > README.md 
+	cd ..
+
+	# return to initial folder
 	cd ..
 }
