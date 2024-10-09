@@ -17,6 +17,8 @@
 
         nativeBuildInputs = [
           pkgs.conda
+          pkgs.gfortran
+          pkgs.libxcrypt
         ];
         
         CSPY_PATH="~/phd/cspy-git";
