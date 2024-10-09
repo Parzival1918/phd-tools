@@ -101,7 +101,8 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-cspy-db cluster ${MOLECULE}-*.db
+echo \"Running clsutering command...\"
+cspy-db cluster ${MOLECULE}-*.db > cspy_cluster_screen.txt && echo \"Success\" || echo \"Exited with $?, check cspy_cluster_screen.txt\" 
 	"
 	PLOT_CSP_LANDSCAPE_SCRIPT="from cspy.db.datastore import CspDataStore
 import sys

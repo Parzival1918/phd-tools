@@ -220,6 +220,21 @@
             cp pmin $out/bin
           '';
         };
+
+        packages.cspy = pkgs.stdenv.mkDerivation {
+          pname = "cspy";
+          varsion = "2.x";
+
+          src = builtins.getEnv "SCPY_PATH";
+
+          buildInputs = [
+            pkgs.conda
+          ];
+
+          buildPhase = ''
+            
+          '';
+        };
       }
     );
 }
