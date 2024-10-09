@@ -1,0 +1,16 @@
+[project]
+name = "marimo-scripts"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Pedro Juan Royo", email = "pedro.juan.royo@gmail.com" }
+]
+dependencies = [
+    "marimo>=0.9.4",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[tool.rye]
+managed = true
+virtual = true
