@@ -51,6 +51,36 @@ export g09root=/iridisfs/i6software/gaussian
 source \$g09root/g09/bsd/g09.profile
 
 g09 ${MOLECULE}.com ${MOLECULE}.log
+
+# extract optimized coords from log file
+source ~/.bashrc
+conda activate cspy
+
+python opt_xyz_extractor_gaussian.py PYRENE01.log PYRENE01.xyz
+	"
+	EXTRACT_OPT_XYZ="from cspy.chem import Molecule
+import argparse
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    \"gaussian_log_file\",
+    type=str,
+    help=\"The (successful) Gaussian calculation log file \"
+    \"containing the molecular structure to be extracted.\"
+    )
+
+parser.add_argument(
+    \"output_xyz_file\",
+    type=str,
+    help=\"The name of the XYZ file to output the structure to.\"
+    )
+
+args = parser.parse_args()
+
+mol = Molecule.from_gaussian_optimization(args.gaussian_log_file)
+mol.to_xyz_file(args.output_xyz_file)
 	"
 	GAUSSIAN_INPUT_FILE="%mem=4GB
 %nprocshared=${GAUSSIAN_CPUS}
@@ -72,7 +102,7 @@ cspy-dma ${MOLECULE}.xyz
 	CSP_JOB_SCRIPT="#!/bin/bash
 #SBATCH --job-name=${MOLECULE}
 #SBATCH --partition=batch
-#SBATCH --nodes=3
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=128
 #SBATCH --time=${CSP_JOB_TIME}
 
@@ -162,6 +192,7 @@ print(\"Landscape saved to Landscape.png\")
 	# create contents of FOLDER_1
 	cp ../${MOLECULE_XYZ} ${FOLDER_1}/${MOLECULE}_original.xyz
 	echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${MOLECULE}.com
+	echo "${EXTRACT_OPT_XYZ}" > ${FOLDER_1}/opt_xyz_extractor_gaussian.py
 	tail -n +3 ../${MOLECULE_XYZ} >> ${FOLDER_1}/${MOLECULE}.com
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com # adding two empty lines at end for format requirements
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com
@@ -170,7 +201,11 @@ print(\"Landscape saved to Landscape.png\")
 
 Step consists in relaxing the molecule structure in the gas phase.
 The g09 software is used, and an input .com file must be created
-from the .xyz data of the molecule.
+from the original .xyz data of the molecule.
+
+The relaxed structure is saved to a new .xyz file using the 
+opt_xyz_extractor_gaussian.py script, which extracts the data from
+the gaussian .log file.
 
 The resulting relaxed structure of the molecule will be used in 
 the next step to create the multipoles using gdma.
@@ -180,6 +215,7 @@ the next step to create the multipoles using gdma.
 	cd ${FOLDER_2}
 	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
 	echo "${DMA_ANALYSIS_SCRIPT}" > dma_analysis.sh
+	chmod +x dma_analysis.sh
 	echo "# ${FOLDER_2}
 
 Step consists in creating the multipoles of the molecule that has
@@ -212,6 +248,7 @@ to top 10 most common from CSD (use CLI opt: -g fine10).
 	cd ${FOLDER_4}
 	ln -s ../${FOLDER_3}/${MOLECULE}-*.db ./
 	echo "${REMOVE_DUPLICATES_SCRIPT}" > remove_duplicates.sh
+	chmod +x remove_duplicates.sh
 	echo "# ${FOLDER_4}
 
 This is the step after all candidate structures have been
