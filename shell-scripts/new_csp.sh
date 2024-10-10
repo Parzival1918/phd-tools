@@ -47,14 +47,14 @@ cd \$SLURM_SUBMIT_DIR
 
 
 export GAUSS_SCRDIR=/scratch/\$USER
-export g09root=/local/software/gaussian
+export g09root=/iridisfs/i6software/gaussian
 source \$g09root/g09/bsd/g09.profile
 
 g09 ${MOLECULE}.com ${MOLECULE}.log
 	"
 	GAUSSIAN_INPUT_FILE="%mem=4GB
 %nprocshared=${GAUSSIAN_CPUS}
-# ${GAUSSIAN_FUNCTIONAL}/${GAUSSIAN_BASIS_SET} opt No Symm EmpiricalDispersion=GD3BJ
+# ${GAUSSIAN_FUNCTIONAL}/${GAUSSIAN_BASIS_SET} opt NoSymm EmpiricalDispersion=GD3BJ
 
 Geometry optimisation calculation for ${MOLECULE}
 
