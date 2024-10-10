@@ -4,7 +4,7 @@ function new-csp {
 	HELP_STR="USAGE: new-csp [FOLDER_NAME] [MOLECULE_XYZ]
 
 ARGUMENTS:
-	 FOLDER_NAME:  Name of the folder that will be created containing the project.
+	FOLDER_NAME:  Name of the folder that will be created containing the project.
 	MOLECULE_XYZ:  Path to the initial molecule .xyz file
 
 by Pedro Juan Royo
@@ -246,7 +246,6 @@ to top 10 most common from CSD (use CLI opt: -g fine10).
 
 	# create contents of FOLDER_4
 	cd ${FOLDER_4}
-	ln -s ../${FOLDER_3}/${MOLECULE}-*.db ./
 	echo "${REMOVE_DUPLICATES_SCRIPT}" > remove_duplicates.sh
 	chmod +x remove_duplicates.sh
 	echo "# ${FOLDER_4}
@@ -262,7 +261,7 @@ unique ones (named output.db by default).
 	cd ${FOLDER_5}
 	ln -s ../${FOLDER_4}/output.db ./
 	echo "${PLOT_CSP_LANDSCAPE_SCRIPT}" > plot_csp_landscape.py
-	echo "# ${FOLDER_4}
+	echo "# ${FOLDER_5}
 
 Analyse the structures in the database in multiple ways:
 
