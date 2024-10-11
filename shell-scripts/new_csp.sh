@@ -26,6 +26,15 @@ by Pedro Juan Royo
 		return 1
 	fi
 
+	# check if csp_settings.txt file exists and source it
+	if [ -f "csp_settings.txt" ]; then
+		echo "Settings file detected. Sourcing... "
+		set -v
+		source csp_settings.txt
+		set +v
+		echo "Settings file sourced."
+	fi
+
 	# default and take settings from env vars
 	GAUSSIAN_CPUS=${GAUSSIAN_CPUS:-"4"}
 	GAUSSIAN_JOB_TIME=${GAUSSIAN_JOB_TIME:-"05:00:00"}
@@ -34,9 +43,11 @@ by Pedro Juan Royo
 	GAUSSIAN_CHARGE=${GAUSSIAN_CHARGE:-"0"}
 	GAUSSIAN_MULTIPLICITY=${GAUSSIAN_MULTIPLICITY:-"1"}
 	CSP_JOB_TIME=${CSP_JOB_TIME:-"24:00:00"}
+	REOPTIMIZE_JOB_TIME=${REOPTIMIZE_JOB_TIME:-"05:00:00"}
 
 	# replace vars to string contents of files
 	GAUSSIAN_JOB_SCRIPT="#!/bin/bash
+#SBATCH --job-name=${MOLECULE}_gauss
 #SBATCH --mincpus=${GAUSSIAN_CPUS}
 #SBATCH --nodes=1-1
 #SBATCH --ntasks=1
@@ -100,7 +111,7 @@ export NUMEXPR_NUM_THREADS=1
 cspy-dma ${MOLECULE}.xyz
 	"
 	CSP_JOB_SCRIPT="#!/bin/bash
-#SBATCH --job-name=${MOLECULE}
+#SBATCH --job-name=${MOLECULE}_csp
 #SBATCH --partition=batch
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=128
@@ -122,6 +133,30 @@ CHARGES=\${MOL_NAME}_rank0.dma
 AXIS=\${MOL_NAME}.mols
 
 mpiexec csp \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -g fine10
+	"
+	REOPTIMIZE_JOB_SCRIPT="#!/bin/bash
+#SBATCH --job-name=${MOLECULE}_reop
+#SBATCH --partition=batch
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --time=${REOPTIMIZE_JOB_TIME}
+
+
+#Source and environmental variables setup
+source ~/.bashrc
+conda activate cspy
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+#Calculation specific setup
+MOL_NAME=${MOLECULE}
+XYZ=\${MOL_NAME}.xyz
+MULTS=\${MOL_NAME}.dma
+CHARGES=\${MOL_NAME}_rank0.dma
+AXIS=\${MOL_NAME}.mols
+
+mpiexec cspy-reoptimize output.db -x \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -p fit --cutoff 30
 	"
 	REMOVE_DUPLICATES_SCRIPT="#!/bin/bash
 
@@ -277,6 +312,8 @@ file of the Relative Energy vs Density of the structures.
 	ln -s ../${FOLDER_2}/${MOLECULE}.dma ${MOLECULE}.dma
 	ln -s ../${FOLDER_2}/${MOLECULE}_rank0.dma ${MOLECULE}_rank0.dma
 	ln -s ../${FOLDER_2}/${MOLECULE}.mols ${MOLECULE}.mols
+	echo "${REOPTIMIZE_JOB_SCRIPT}" > job_submit.sh
+	ln -s ../plot_csp_landscape.py ./
 	echo "# ${FOLDER_6}
 
 Reoptimise any promising low energy structures using more
