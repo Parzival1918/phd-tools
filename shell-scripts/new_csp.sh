@@ -108,7 +108,9 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-cspy-dma ${MOLECULE}.xyz
+ln -fs ../${FOLDER_1}/*.xyz ./
+
+cspy-dma *.xyz
 	"
 	CSP_JOB_SCRIPT="#!/bin/bash
 #SBATCH --job-name=${MOLECULE}_csp
@@ -125,14 +127,13 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-#Calculation specific setup
-MOL_NAME=${MOLECULE}
-XYZ=\${MOL_NAME}.xyz
-MULTS=\${MOL_NAME}.dma
-CHARGES=\${MOL_NAME}_rank0.dma
-AXIS=\${MOL_NAME}.mols
+ln -fs ../${FOLDER_1}/*.xyz ./
+ln -fs ../${FOLDER_2}/*.dma ./
+ln -fs ../${FOLDER_2}/*.mols ./
 
-mpiexec csp \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -g fine10
+shopt -s extglob
+mpiexec csp *.xyz -c *_rank0.dma -m !(*_rank0).dma -a *.mols -g fine10
+shopt -u extglob	
 	"
 	REOPTIMIZE_JOB_SCRIPT="#!/bin/bash
 #SBATCH --job-name=${MOLECULE}_reop
@@ -149,14 +150,13 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-#Calculation specific setup
-MOL_NAME=${MOLECULE}
-XYZ=\${MOL_NAME}.xyz
-MULTS=\${MOL_NAME}.dma
-CHARGES=\${MOL_NAME}_rank0.dma
-AXIS=\${MOL_NAME}.mols
+ln -fs ../${FOLDER_1}/*.xyz ./
+ln -fs ../${FOLDER_2}/*.dma ./
+ln -fs ../${FOLDER_2}/*.mols ./
 
-mpiexec cspy-reoptimize output.db -x \${XYZ} -c \${CHARGES} -m \${MULTS} -a \${AXIS} -p fit --cutoff 30
+shopt -s extglob
+mpiexec cspy-reoptimize output.db -x *.xyz -c *_rank0.dma -m !(*_rank0).dma -a *.mols -p fit --cutoff 30
+shopt -u extglob	
 	"
 	REMOVE_DUPLICATES_SCRIPT="#!/bin/bash
 
@@ -166,8 +166,10 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
+ln -fs ../${FOLDER_3}/*-*.db ./
+
 echo \"Running clsutering command...\"
-cspy-db cluster ${MOLECULE}-*.db > cspy_cluster_screen.txt && echo \"Success\" || echo \"Exited with $?, check cspy_cluster_screen.txt\" 
+cspy-db cluster *-*.db > cspy_cluster_screen.txt && echo \"Success\" || echo \"Exited with $?, check cspy_cluster_screen.txt\" 
 	"
 	PLOT_CSP_LANDSCAPE_SCRIPT="from cspy.db.datastore import CspDataStore
 import sys
@@ -225,12 +227,12 @@ print(\"Landscape saved to Landscape.png\")
 	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3} ${FOLDER_4} ${FOLDER_5} ${FOLDER_6}
 
 	# create contents of FOLDER_1
-	cp ../${MOLECULE_XYZ} ${FOLDER_1}/${MOLECULE}_original.xyz
+	cp ../${MOLECULE_XYZ} ${FOLDER_1}/${MOLECULE}.xyz.original
 	echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${MOLECULE}.com
-	echo "${EXTRACT_OPT_XYZ}" > ${FOLDER_1}/opt_xyz_extractor_gaussian.py
 	tail -n +3 ../${MOLECULE_XYZ} >> ${FOLDER_1}/${MOLECULE}.com
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com # adding two empty lines at end for format requirements
 	echo "" >> ${FOLDER_1}/${MOLECULE}.com
+	echo "${EXTRACT_OPT_XYZ}" > ${FOLDER_1}/opt_xyz_extractor_gaussian.py
 	echo "${GAUSSIAN_JOB_SCRIPT}" > ${FOLDER_1}/job_submit.sh
 	echo "# ${FOLDER_1}
 
@@ -248,7 +250,6 @@ the next step to create the multipoles using gdma.
 
 	# create contents of FOLDER_2
 	cd ${FOLDER_2}
-	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
 	echo "${DMA_ANALYSIS_SCRIPT}" > dma_analysis.sh
 	chmod +x dma_analysis.sh
 	echo "# ${FOLDER_2}
@@ -265,10 +266,6 @@ produce the files:
 
 	# create contents of FOLDER_3
 	cd ${FOLDER_3}
-	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
-	ln -s ../${FOLDER_2}/${MOLECULE}.dma ${MOLECULE}.dma
-	ln -s ../${FOLDER_2}/${MOLECULE}_rank0.dma ${MOLECULE}_rank0.dma
-	ln -s ../${FOLDER_2}/${MOLECULE}.mols ${MOLECULE}.mols
 	echo "${CSP_JOB_SCRIPT}" > job_submit.sh
 	echo "# ${FOLDER_3}
 
@@ -308,12 +305,8 @@ file of the Relative Energy vs Density of the structures.
 	# create contents of FOLDER_6
 	cd ${FOLDER_6}
 	ln -s ../${FOLDER_4}/output.db ./
-	ln -s ../${FOLDER_1}/${MOLECULE}.xyz ${MOLECULE}.xyz
-	ln -s ../${FOLDER_2}/${MOLECULE}.dma ${MOLECULE}.dma
-	ln -s ../${FOLDER_2}/${MOLECULE}_rank0.dma ${MOLECULE}_rank0.dma
-	ln -s ../${FOLDER_2}/${MOLECULE}.mols ${MOLECULE}.mols
 	echo "${REOPTIMIZE_JOB_SCRIPT}" > job_submit.sh
-	ln -s ../plot_csp_landscape.py ./
+	ln -s ../${FOLDER_5}/plot_csp_landscape.py ./
 	echo "# ${FOLDER_6}
 
 Reoptimise any promising low energy structures using more
