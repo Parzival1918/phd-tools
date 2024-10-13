@@ -75,10 +75,35 @@ by Pedro Juan Royo
 	GAUSSIAN_JOB_TIME=${GAUSSIAN_JOB_TIME:-"05:00:00"}
 	GAUSSIAN_FUNCTIONAL=${GAUSSIAN_FUNCTIONAL:-"B3LYP"}
 	GAUSSIAN_BASIS_SET=${GAUSSIAN_BSIS_SET:-"6-311G**"}
-	GAUSSIAN_CHARGE=${GAUSSIAN_CHARGE:-"0"}
-	GAUSSIAN_MULTIPLICITY=${GAUSSIAN_MULTIPLICITY:-"1"}
 	CSP_JOB_TIME=${CSP_JOB_TIME:-"24:00:00"}
 	REOPTIMIZE_JOB_TIME=${REOPTIMIZE_JOB_TIME:-"05:00:00"}
+
+	if [ -z "${GAUSSIAN_CHARGE}" ]; then 
+		GAUSSIAN_CHARGE=()
+		for i in "${MOLECULES[@]}"; do
+			GAUSSIAN_CHARGE+=(0)
+		done
+	fi
+	if [ -z "${GAUSSIAN_MULTIPLICITY}" ]; then 
+		GAUSSIAN_MULTIPLICITY=()
+		for i in "${MOLECULES[@]}"; do
+			GAUSSIAN_MULTIPLICITY+=(1)
+		done
+	fi
+
+	if [ ! "${#MOLECULES[@]}" == "${#GAUSSIAN_CHARGE[@]}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Length of GAUSSIAN_CHARGE and MOLECULES does not match:"
+		echo " GAUSSIAN_CHARGE -> ${GAUSSIAN_CHARGE[@]}"
+		echo " MOLECULES -> ${MOLECULES[@]}"
+		return 1
+	fi
+
+	if [ ! "${#MOLECULES[@]}" == "${#GAUSSIAN_MULTIPLICITY[@]}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Length of GAUSSIAN_MULTIPLICITY and MOLECULES does not match:"
+		echo " GAUSSIAN_MULTIPLICITY -> ${GAUSSIAN_MULTIPLICITY[@]}"
+		echo " MOLECULES -> ${MOLECULES[@]}"
+		return 1
+	fi
 
 	# replace vars to string contents of files
 	GAUSSIAN_JOB_SCRIPT="#!/bin/bash
@@ -134,7 +159,7 @@ mol.to_xyz_file(args.output_xyz_file)
 
 Geometry optimisation calculation for ${PROJ_FOLDER}
 
-${GAUSSIAN_CHARGE} ${GAUSSIAN_MULTIPLICITY}"
+__charge__ __multiplicity__"
 	DMA_ANALYSIS_SCRIPT="#!/bin/bash
 
 source ~/.bashrc
@@ -145,7 +170,7 @@ export NUMEXPR_NUM_THREADS=1
 
 ln -fs ../${FOLDER_1}/*.xyz ./
 
-cspy-dma ${MOLECULES[@]}
+cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
 	"
 	CSP_JOB_SCRIPT="#!/bin/bash
 #SBATCH --job-name=${MOLECULE}_csp
@@ -255,12 +280,19 @@ print(\"Landscape saved to Landscape.png\")
 	for M in "${!uniq_tmp[@]}"; do # copy original xyz files
 		cp ../${M} ${FOLDER_1}/${M}.original
 	done
-	for M in "${!uniq_tmp[@]}"; do # create g09 .com input files for each
+	local i=0
+	for M in "${MOLECULES[@]}"; do # create g09 .com input files for each
 		m=${M%.xyz} # molecule file name without .xyz extension
 		echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${m}.com
 		tail -n +3 ../${M} >> ${FOLDER_1}/${m}.com
 		echo "" >> ${FOLDER_1}/${m}.com # adding two empty lines at end for format requirements
 		echo "" >> ${FOLDER_1}/${m}.com
+
+		# substitute in the values of charge and multiplicity
+		sed -i "s/__charge__/${GAUSSIAN_CHARGE[$i]}/" ${FOLDER_1}/${m}.com
+		sed -i "s/__multiplicity__/${GAUSSIAN_MULTIPLICITY[$i]}/" ${FOLDER_1}/${m}.com
+
+		let "i++"
 	done
 	echo "${EXTRACT_OPT_XYZ}" > ${FOLDER_1}/opt_xyz_extractor_gaussian.py
 	echo "${GAUSSIAN_JOB_SCRIPT}" > ${FOLDER_1}/job_submit.sh
