@@ -16,13 +16,57 @@ by Pedro Juan Royo
     FOLDER_5="5-generate-disconnectivity-graph"
 
     PROJ_FOLDER=${1:?"${HELP_STR}"}
-	MOLECULE_XYZ=${2:?"${HELP_STR}"}
-	MOLECULE=${MOLECULE_XYZ%.xyz}
-	EXTENSION=${MOLECULE_XYZ##*.}
 
-	if [ ${EXTENSION} != "xyz" ]; then
-		echo "ERROR: Extension of '${MOLECULE_XYZ}' is not .xyz"
+	if [ -d "${PROJ_FOLDER}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Folder with name '${PROJ_FOLDER}' already exists"
 		return 1
+	fi
+
+	if [ -f "${PROJ_FOLDER}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Folder with name '${PROJ_FOLDER}' cannot be created as file with same name exists"
+		return 1
+	fi
+
+	if [ $# -lt 2 ]; then
+		echo "${HELP_STR}"
+		return 1
+	fi
+
+	MOLECULES=("${@:2}")
+	for M in "${MOLECULES[@]}"; do
+		if [ ! -f "${M}" ]; then
+			tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " No file named '${M}' found"
+			return 1
+		fi
+
+		EXTENSION=${M##*.}
+		if [ ${EXTENSION} != "xyz" ]; then
+			tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Extension of '${M}' is not .xyz"
+			return 1
+		fi
+	done
+
+	declare -A uniq_tmp
+
+	for M in "${MOLECULES[@]}"; do
+		uniq_tmp[$M]=0 # assigning a placeholder
+	done
+
+	OPT_XY_STRING=""
+	G09_STRING=""
+	for M in "${!uniq_tmp[@]}"; do
+		m=${M%.xyz}
+		G09_STRING+="g09 ${m}.com ${m}.log; "
+		OPT_XY_STRING+="python opt_xyz_extractor_gaussian.py ${m}.log ${m}.xyz; "
+	done
+
+	# check if csp_settings.txt file exists and source it
+	if [ -f "thresh_settings.txt" ]; then
+		echo "Settings file detected. Sourcing... "
+		set -v
+		source thresh_settings.txt
+		set +v
+		echo "Settings file sourced."
 	fi
 
     # default and take settings from env vars
@@ -30,12 +74,39 @@ by Pedro Juan Royo
 	GAUSSIAN_JOB_TIME=${GAUSSIAN_JOB_TIME:-"05:00:00"}
 	GAUSSIAN_FUNCTIONAL=${GAUSSIAN_FUNCTIONAL:-"B3LYP"}
 	GAUSSIAN_BASIS_SET=${GAUSSIAN_BSIS_SET:-"6-311G**"}
-	GAUSSIAN_CHARGE=${GAUSSIAN_CHARGE:-"0"}
-	GAUSSIAN_MULTIPLICITY=${GAUSSIAN_MULTIPLICITY:-"1"}
 	MC_JOB_TIME=${MC_JOB_TIME:-"24:00:00"}
+	REOPTIMIZE_JOB_TIME=${REOPTIMIZE_JOB_TIME:-"05:00:00"}
+
+	if [ -z "${GAUSSIAN_CHARGE}" ]; then 
+		GAUSSIAN_CHARGE=()
+		for i in "${MOLECULES[@]}"; do
+			GAUSSIAN_CHARGE+=(0)
+		done
+	fi
+	if [ -z "${GAUSSIAN_MULTIPLICITY}" ]; then 
+		GAUSSIAN_MULTIPLICITY=()
+		for i in "${MOLECULES[@]}"; do
+			GAUSSIAN_MULTIPLICITY+=(1)
+		done
+	fi
+
+	if [ ! "${#MOLECULES[@]}" == "${#GAUSSIAN_CHARGE[@]}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Length of GAUSSIAN_CHARGE and MOLECULES does not match:"
+		echo " GAUSSIAN_CHARGE -> ${GAUSSIAN_CHARGE[@]}"
+		echo " MOLECULES -> ${MOLECULES[@]}"
+		return 1
+	fi
+
+	if [ ! "${#MOLECULES[@]}" == "${#GAUSSIAN_MULTIPLICITY[@]}" ]; then
+		tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Length of GAUSSIAN_MULTIPLICITY and MOLECULES does not match:"
+		echo " GAUSSIAN_MULTIPLICITY -> ${GAUSSIAN_MULTIPLICITY[@]}"
+		echo " MOLECULES -> ${MOLECULES[@]}"
+		return 1
+	fi
 
 	# replace vars to string contents of files
 	GAUSSIAN_JOB_SCRIPT="#!/bin/bash
+#SBATCH --job-name=${PROJ_FOLDER}_gauss
 #SBATCH --mincpus=${GAUSSIAN_CPUS}
 #SBATCH --nodes=1-1
 #SBATCH --ntasks=1
@@ -46,10 +117,16 @@ cd \$SLURM_SUBMIT_DIR
 
 
 export GAUSS_SCRDIR=/scratch/\$USER
-export g09root=/local/software/gaussian
+export g09root=/iridisfs/i6software/gaussian
 source \$g09root/g09/bsd/g09.profile
 
-g09 ${MOLECULE}.com ${MOLECULE}.log
+${G09_STRING}
+
+# extract optimized coords from log file
+source ~/.bashrc
+conda activate cspy
+
+${OPT_XY_STRING}
 	"
     EXTRACT_OPT_XYZ="from cspy.chem import Molecule
 import argparse
@@ -77,11 +154,11 @@ mol.to_xyz_file(args.output_xyz_file)
 	"
 	GAUSSIAN_INPUT_FILE="%mem=4GB
 %nprocshared=${GAUSSIAN_CPUS}
-# ${GAUSSIAN_FUNCTIONAL}/${GAUSSIAN_BASIS_SET} opt No Symm EmpiricalDispersion=GD3BJ
+# ${GAUSSIAN_FUNCTIONAL}/${GAUSSIAN_BASIS_SET} opt NoSymm EmpiricalDispersion=GD3BJ
 
-Geometry optimisation calculation for ${MOLECULE}
+Geometry optimisation calculation for ${PROJ_FOLDER}
 
-${GAUSSIAN_CHARGE} ${GAUSSIAN_MULTIPLICITY}"
+__charge__ __multiplicity__"
 	DMA_ANALYSIS_SCRIPT="#!/bin/bash
 
 source ~/.bashrc
@@ -90,7 +167,9 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-cspy-dma ${MOLECULE}.xyz
+ln -fs ../${FOLDER_1}/*.xyz ./
+
+cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
 	"
     TO_P1_SCRIPT="from cspy.crystal import Crystal
 import sys
@@ -118,12 +197,24 @@ p1_crystal.save(sys.argv[2])
 	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3}
 
 	# create contents of FOLDER_1
-	cp ../${MOLECULE_XYZ} ${FOLDER_1}/${MOLECULE}_original.xyz
-	echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${MOLECULE}.com
+	for M in "${!uniq_tmp[@]}"; do # copy original xyz files
+		cp ../${M} ${FOLDER_1}/${M}.original
+	done
+	local i=0
+	for M in "${MOLECULES[@]}"; do # create g09 .com input files for each
+		m=${M%.xyz} # molecule file name without .xyz extension
+		echo "${GAUSSIAN_INPUT_FILE}" > ${FOLDER_1}/${m}.com
+		tail -n +3 ../${M} >> ${FOLDER_1}/${m}.com
+		echo "" >> ${FOLDER_1}/${m}.com # adding two empty lines at end for format requirements
+		echo "" >> ${FOLDER_1}/${m}.com
+
+		# substitute in the values of charge and multiplicity
+		sed -i "s/__charge__/${GAUSSIAN_CHARGE[$i]}/" ${FOLDER_1}/${m}.com
+		sed -i "s/__multiplicity__/${GAUSSIAN_MULTIPLICITY[$i]}/" ${FOLDER_1}/${m}.com
+
+		let "i++"
+	done
 	echo "${EXTRACT_OPT_XYZ}" > ${FOLDER_1}/opt_xyz_extractor_gaussian.py
-	tail -n +3 ../${MOLECULE_XYZ} >> ${FOLDER_1}/${MOLECULE}.com
-	echo "" >> ${FOLDER_1}/${MOLECULE}.com # adding two empty lines at end for format requirements
-	echo "" >> ${FOLDER_1}/${MOLECULE}.com
 	echo "${GAUSSIAN_JOB_SCRIPT}" > ${FOLDER_1}/job_submit.sh
 	echo "# ${FOLDER_1}
 
