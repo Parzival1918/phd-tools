@@ -173,11 +173,69 @@ cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"
 	"
     TO_P1_SCRIPT="from cspy.crystal import Crystal
 import sys
+from pathlib import Path
 
-crystal = Crystal.load(sys.argv[1])
-p1_crystal = crystal.as_P1()
-p1_crystal.save(sys.argv[2])
+
+for crys_file in sys.argv[1:]:
+	print(f\"Converting {crys_file} to P1 symmetry... \", end=\"\")
+	crystal = Crystal.load(crys_file)
+	p1_crystal = crystal.as_P1()
+	p1_crystal.save(Path(crys_file).stem + \"_as_P1\" + Path(crys_file).suffix)
+	print(\"Done\")
     "
+	THRESH_SCRIPT="#!/bin/bash
+#SBATCH --job-name=${PROJ_FOLDER}_thresh
+#SBATCH --partition=batch
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --time=${MC_JOB_TIME}
+
+
+cd \$SLURM_SUBMIT_DIR
+
+source ~/.bashrc
+conda activate cspy
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+ln -fs ../${FOLDER_1}/*.xyz ./
+
+cspy-threshold ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
+	"
+	CSPY_TOML="csp_minimization_step = [
+{ kind = \"dmacrys\", electrostatics = \"multipoles\" },
+{ kind = \"dmacrys\", CONP = true, PRES = \"0.1 GPa\", electrostatics = \"multipoles\"},
+{ kind = \"dmacrys\", electrostatics = \"multipoles\" },
+]
+
+[mc]
+num_steps = 100
+move = [
+    [ \"tra\", \"0.0\", \"0.5\"],
+    [ \"rot\", \"0.0\", \"0.05\"],
+    [ \"u_a\", \"0.0\", \"0.5\"],
+    [ \"u_l\", \"0.0\", \"0.5\"],
+    [ \"vol\", \"0.0\", \"25\"]
+]
+move_scale = 1.0
+move_all = false
+auto_prob = true
+auto_cutoff = true
+
+[basin_hopping]
+dump_accept = false
+
+[threshold]
+interval_para = [ \"fixed\", \"10\", ]
+increase_para = [ \"fixed\", \"5.0\", ]
+minimize = true
+
+[dmacrys]
+timeout = 200.0
+	"
+	CONNECTIVITY_SCRIPT="
+	"
 
     if [ -d "${PROJ_FOLDER}" ]; then
 		echo "ERROR: Folder with name '${PROJ_FOLDER}' already exists"
@@ -253,24 +311,36 @@ produce the files:
     echo "# ${FOLDER_3}
 
 Add the starting crystal structures to start the MC runs from there.
-They must all be converted to P1 symmetry. Use the to_p1.sh script
-to turn all SHELX or CIF input files to P1.
+They must all be converted to P1 symmetry. Use the to_p1.py script
+to turn all SHELX or CIF input files to P1 (remember to activate 
+the conda environment with CSPy beforehand).
+
+They are converted to P1 symmetry to avoid the MC algorithm being
+constrained by the symmetry of the initial structure.
 	" > README.md 
 	cd ..
 
     # create contents of FOLDER_4
     cd ${FOLDER_4}
+	echo "${SCPY_TOML}" > cspy.toml
+	echo "${THRESH_SCRIPT}" > job_submit.sh
     echo "# ${FOLDER_4}
 
-Run the MC threshold calculation.
+Run the MC threshold calculation. The cspy.toml file contains all
+the settings for available MC moves and which energy minimisation 
+steps are done.
 	" > README.md 
 	cd ..
 
     # create contents of FOLDER_5
     cd ${FOLDER_5}
+	echo ""${CONNECTIVITY_SCRIPT} > connectivity_graph.sh
+	chmod +x connectivity_graph.sh
     echo "# ${FOLDER_5}
 
-Create the connectivity graph.
+Create the connectivity graph. This must be run with the original
+database and not the clustered one as it does not contain the 
+trajectory information.
 	" > README.md 
 	cd ..
 }
