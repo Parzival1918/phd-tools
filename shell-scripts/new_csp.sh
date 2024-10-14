@@ -170,7 +170,7 @@ export NUMEXPR_NUM_THREADS=1
 
 ln -fs ../${FOLDER_1}/*.xyz ./
 
-cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
+cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CHARGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
 	"
 	CSP_JOB_SCRIPT="#!/bin/bash
 #SBATCH --job-name=${MOLECULE}_csp
