@@ -200,8 +200,13 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
 ln -fs ../${FOLDER_1}/*.xyz ./
+ln -fs ../${FOLDER_2}/*.dma ./
+ln -fs ../${FOLDER_2}/*.mols ./
+ln -fs ../${FOLDER_3}/*_as_P1* ./
 
-cspy-threshold ${MOLECULES[@]} --charges \"${GAUSSIAN_CAHRGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
+shopt -s extglob
+mpiexec cspy-threshold ${MOLECULES[@]} -r *_as_P1* -c *_rank0.dma -m !(*_rank0).dma -a *.mols -g 1 --trials-per-res 1
+shopt -u extglob
 	"
 	CSPY_TOML="csp_minimization_step = [
 { kind = \"dmacrys\", electrostatics = \"multipoles\" },
@@ -234,25 +239,29 @@ minimize = true
 [dmacrys]
 timeout = 200.0
 	"
-	CONNECTIVITY_SCRIPT="
+	CONNECTIVITY_SCRIPT="#!/bin/bash
+
+source ~/.bashrc
+conda activate cspy
+
+database_path=\${1:?\"Call the script with the path to the original database.\"}
+
+ln -fs ../${FOLDER_4}/*.db ./
+
+if [ ! -f \"\${database_path}\" ]; then
+	echo \"ERROR: '\${database_path}' database does not exist after creating symlinks from folder: '${FOLDER_4}'\"
+fi
+
+cspy-db cluster \${database_path} # first cluster the original db
+python \${CSPY_DIR}/clustering/connectivity_graph.py \${database_path} # connectivity plot from original db
 	"
-
-    if [ -d "${PROJ_FOLDER}" ]; then
-		echo "ERROR: Folder with name '${PROJ_FOLDER}' already exists"
-		return 1
-	fi
-
-	if [ ! -f "${MOLECULE_XYZ}" ]; then
-		echo "ERROR: No file named '${MOLECULE_XYZ}' found"
-		return 1
-	fi
 
     # create project folder
 	mkdir ${PROJ_FOLDER}
 	cd ${PROJ_FOLDER}
 
 	# create step folders
-	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3}
+	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3} ${FOLDER_4} ${FOLDER_5}
 
 	# create contents of FOLDER_1
 	for M in "${!uniq_tmp[@]}"; do # copy original xyz files
@@ -341,6 +350,11 @@ steps are done.
 Create the connectivity graph. This must be run with the original
 database and not the clustered one as it does not contain the 
 trajectory information.
+
+For the script to work you must have the env var CSPY_DIR set to 
+the dir where CSPy source code is (not the dir where the git repo
+is, the cspy folder there). The script runs the clustering on the 
+database for you. 
 	" > README.md 
 	cd ..
 }
