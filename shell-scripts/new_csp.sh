@@ -173,7 +173,7 @@ ln -fs ../${FOLDER_1}/*.xyz ./
 cspy-dma ${MOLECULES[@]} --charges \"${GAUSSIAN_CHARGE[@]}\" --multiplicities \"${GAUSSIAN_MULTIPLICITY[@]}\"
 	"
 	CSP_JOB_SCRIPT="#!/bin/bash
-#SBATCH --job-name=${MOLECULE}_csp
+#SBATCH --job-name=${PROJ_FOLDER}_csp
 #SBATCH --partition=batch
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=128
