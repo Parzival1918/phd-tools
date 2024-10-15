@@ -10,83 +10,67 @@ def __():
     from pathlib import Path
     import pandas as pd
     import altair as alt
-    from ase.visualize import view
-    import ase.io as asio
-    from shelxfile import Shelxfile
     import tempfile
-    return Path, Shelxfile, alt, asio, mo, pd, tempfile, view
+    return Path, alt, mo, pd, tempfile
 
 
 @app.cell
 def __(mo):
-    struct_loc = mo.ui.text(placeholder="structures.csv...", label="Enter path of 'structures.csv':")
-    struct_dir = mo.ui.text(placeholder="structures/...", label="Enter path of 'structures' dir:")
-    struct_loc, struct_dir
-    return struct_dir, struct_loc
+    file_input = mo.ui.file(filetypes=[".csv"], multiple=False, kind="area", label="Open a structures.csv file")
+    file_input
+    return (file_input,)
 
 
 @app.cell
-def __(Path, mo, struct_loc):
-    mo.stop(struct_loc.value is None or struct_loc.value is "")
-    print(struct_loc.value)
-    struct_file = Path(struct_loc.value).expanduser()
-    print(struct_file)
-
-    mo.stop(not struct_file.exists())
-    return (struct_file,)
+def __(Path, file_input, pd, tempfile):
+    with tempfile.TemporaryDirectory() as dir:
+        file = Path(dir + "/data.csv")
+        file.write_bytes(file_input.contents())
+        df = pd.read_csv(file)
+    return df, dir, file
 
 
 @app.cell
-def __(Path, mo, struct_dir):
-    mo.stop(struct_dir.value is None or struct_dir.value is "")
-    print(struct_dir.value)
-    rootDir = Path(struct_dir.value).expanduser()
-    print(rootDir)
+def __(df, mo):
+    groups = ["spacegroup", "density", "energy", "minimization_step", "minimization_time"]
+    group_select = mo.ui.dropdown(options=groups, label="Group by: ", value="spacegroup")
 
-    mo.stop(not rootDir.exists())
-    return (rootDir,)
+    N = max(df["minimization_step"])
+    min_step_select= mo.ui.number(start=0, step=1, stop=N, label="Minimization step filter")
+
+    mo.vstack([group_select, min_step_select])
+    return N, group_select, groups, min_step_select
 
 
 @app.cell
-def __(alt, mo, pd, struct_file):
-    df = pd.read_csv(struct_file)
-
-    x, y = df["density"], df["energy"]
+def __(alt, df, group_select, min_step_select, mo):
+    if min_step_select.value == 0:
+        sec = df
+    else:
+        sec = df[df["minimization_step"] == min_step_select.value]
+        
     _chart = (
-        alt.Chart(df).mark_point().encode(
-            x="density",
+        alt.Chart(sec).mark_point().encode(
+            alt.X("density").scale(zero=False, padding=2.0),
             y="energy",
-            color="spacegroup"
+            color=group_select.value
         )
     )
     chart = mo.ui.altair_chart(_chart)
+    return chart, sec
 
+
+@app.cell
+def __(chart):
     chart
-    return chart, df, x, y
+    return
 
 
 @app.cell
 def __(chart, mo):
-    table = mo.ui.table(chart.value, selection="single")
+    table = mo.ui.table(chart.value)
     table
     return (table,)
-
-
-@app.cell
-def __(Path, mo, rootDir, table):
-    mo.stop(table.value.empty)
-    selection = table.value
-    file_path = rootDir / (selection.iloc[0]["id"] + ".res")
-    file_path = Path("~/downloads/PYRENE01.xyz").expanduser()
-
-    #shx = Shelxfile()
-    #shx.read_file(file_path)
-    #with tempfile.TemporaryDirectory() as temp_dir:
-    #    print(temp_dir)
-    #    shx.to_cif(temp_dir + "/temp.cif")
-    #    print(Path(temp_dir + "/temp.cif").read_text())
-    #    atoms = asio.read(temp_dir + "/temp.cif")
-    return file_path, selection
 
 
 if __name__ == "__main__":
