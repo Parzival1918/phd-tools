@@ -8,8 +8,12 @@
 #   with-sources: false
 #   generate-hashes: false
 
+altair==5.4.1
 anyio==4.6.0
     # via starlette
+attrs==24.2.0
+    # via jsonschema
+    # via referencing
 click==8.1.7
     # via marimo
     # via uvicorn
@@ -23,12 +27,26 @@ itsdangerous==2.2.0
     # via marimo
 jedi==0.19.1
     # via marimo
+jinja2==3.1.4
+    # via altair
+jsonschema==4.23.0
+    # via altair
+jsonschema-specifications==2024.10.1
+    # via jsonschema
 marimo==0.9.4
 markdown==3.7
     # via marimo
     # via pymdown-extensions
+markupsafe==3.0.1
+    # via jinja2
+narwhals==1.9.3
+    # via altair
+numpy==2.1.2
+    # via pandas
 packaging==24.1
+    # via altair
     # via marimo
+pandas==2.2.3
 parso==0.8.4
     # via jedi
 psutil==6.0.0
@@ -37,17 +55,33 @@ pygments==2.18.0
     # via marimo
 pymdown-extensions==10.11.2
     # via marimo
+python-dateutil==2.9.0.post0
+    # via pandas
+pytz==2024.2
+    # via pandas
 pyyaml==6.0.2
     # via marimo
     # via pymdown-extensions
+referencing==0.35.1
+    # via jsonschema
+    # via jsonschema-specifications
+rpds-py==0.20.0
+    # via jsonschema
+    # via referencing
 ruff==0.6.9
     # via marimo
+six==1.16.0
+    # via python-dateutil
 sniffio==1.3.1
     # via anyio
 starlette==0.39.2
     # via marimo
 tomlkit==0.13.2
     # via marimo
+typing-extensions==4.12.2
+    # via altair
+tzdata==2024.2
+    # via pandas
 uvicorn==0.31.1
     # via marimo
 websockets==12.0
