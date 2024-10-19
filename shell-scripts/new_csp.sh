@@ -234,13 +234,19 @@ cspy-db cluster *-*.db > cspy_cluster_screen.txt && echo \"Success\" || echo \"E
 	PLOT_CSP_LANDSCAPE_SCRIPT="from cspy.db.datastore import CspDataStore
 import sys
 import matplotlib.pyplot as plt
+from pathlib import Path
+import pandas as pd
 
 
 db = CspDataStore(sys.argv[1])
 data = [item for item in db.query(\"select energy, density, spacegroup from crystal where id like '%-3'\").fetchall()]
 
 sgs = {}
+min_y = 1e10
 for y, x, sg in data:
+	if y < min_y:
+		min_y = y
+
     if sg in sgs:
         sgs[sg].append([x, y])
     else:
@@ -253,12 +259,27 @@ for sg in sgs:
     y=[a[1] for a in sgs[sg]]
     ax.scatter(
         x=x,
-        y=[i - min(y) for i in y],
+        y=[i - min_y for i in y],
         label=sg,
         s=10,
         edgecolor='k',
     )
     c += 1
+
+# check if there is a file "extra_structures.csv" with extra structures to plot
+# This file should have the format: name, density, energy, spacegroup
+extra_file = Path('extra_structures.csv')
+if extra_file.is_file():
+	print(\"Extra structures file found. Adding to plot...\")	
+	extra_data = pd.read_csv(extra_file)
+	for i, row in extra_data.iterrows():
+		ax.scatter(
+			x=row['density'],
+			y=row['energy'] - min_y,
+			label=row['name'],
+			s=10,
+			marker='x',
+		)
 
 plt.xlabel('Density (g cm$^{-3}$)')
 plt.ylabel('Relative Energy (kJ mol$^{-1}$)')
