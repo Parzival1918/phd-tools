@@ -15,6 +15,8 @@ by Pedro Juan Royo
 	FOLDER_4="4-remove-duplicates"
 	FOLDER_5="5-analyse-landscape"
 	FOLDER_6="6-reoptimise"
+	FOLDER_7="7-find-matches"
+	FOLDER_8="0-extras"
 
 	PROJ_FOLDER=${1:?"${HELP_STR}"}
 
@@ -289,13 +291,39 @@ plt.savefig('Landscape.png', dpi=600)
 
 print(\"Landscape saved to Landscape.png\")
 	" # inspired from https://mol-cspy.readthedocs.io/en/latest/bb_wikipages/Scripts%20for%20CSPy.html
+	FIND_MATCHES_SCRIPT="#!/bin/bash
+
+local output_folder=\${1:?\"Usage: \$0 OUTPUT_FOLDER] [DATABASE]\"}
+local database=\${2:?\"Usage: \$0 [OUTPUT_FOLDER] [DATABASE]\"}
+local compare_structures=\${@:3}
+
+source ~/.bashrc
+conda activate cspy
+
+mkdir \$output_folder
+echo \"Folder: \$output_folder created\"
+
+local i=1
+for structure in \${compare_structures[@]}; do
+	echo -n \"Finding matches for \${structure} (structure \${i} of \${#compare_structures[@]})...\"
+	cspy-db cluster -m compack --compack_exp_str \${structure} \$database > \$output_folder/\${structure}.screen
+	mv output.db \${output_folder}/\${structure}_matches.db
+	mv rmsd_matches.txt \${output_folder}/\${structure}_rmsd_matches.txt
+	echo \"Done\"
+	let \"i++\"
+done
+	"
+	EXTRAS_REPLACE_MOL_SCRIPT="#!/bin/bash
+	"
+	EXTRAS_MINIMISE_STRUCTURE_SCRIPT="#!/bin/bash
+	"
 
 	# create project folder
 	mkdir ${PROJ_FOLDER}
 	cd ${PROJ_FOLDER}
 
 	# create step folders
-	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3} ${FOLDER_4} ${FOLDER_5} ${FOLDER_6}
+	mkdir ${FOLDER_1} ${FOLDER_2} ${FOLDER_3} ${FOLDER_4} ${FOLDER_5} ${FOLDER_6} ${FOLDER_7}
 
 	# create contents of FOLDER_1
 	for M in "${!uniq_tmp[@]}"; do # copy original xyz files
@@ -397,10 +425,47 @@ accurate energy methods.
 	" > README.md 
 	cd ..
 
+	# create contents of FOLDER_7
+	mkdir ${FOLDER_7}
+	cd ${FOLDER_7}
+	echo "${FIND_MATCHES_SCRIPT}" > find_matches.sh
+	chmod +x find_matches.sh
+	echo "# ${FOLDER_7}
+
+Find if some user-defined structures are present in the CSP
+database. This is useful to check if some known structures
+have been generated.
+	" > README.md
+	cd ..
+
+	# create contents of FOLDER_8
+	mkdir ${FOLDER_8}
+	cd ${FOLDER_8}
+	echo "${EXTRAS_REPLACE_MOL_SCRIPT}" > replace_mol.sh
+	chmod +x replace_mol.sh
+	echo "${EXTRAS_MINIMISE_STRUCTURE_SCRIPT}" > minimise_structure.sh
+	chmod +x minimise_structure.sh
+	echo "# ${FOLDER_8}
+
+Extra folder for any additional scripts or files that can be
+used in the project:
+
+- \`replace_mol.sh\` Script to replace the asymmetric unit of a
+crystal with a different molecule.
+- \`minimise_structure.sh\` Script to minimise a structure.
+Modifdy the cspy.toml file to change the minimisation settings.
+	" > README.md
+	cd ..
+
 	# create project.info file
 	local project_info="project.info"
 	echo "PROJ_NAME=${PROJ_FOLDER}" > ${project_info}
 	echo "PROJ_LOCATION=${PWD}" >> ${project_info}
+	echo "MOLECULES=${MOLECULES[@]}" >> ${project_info}
+
+	# create project.log file
+	local project_log="project.log"
+	echo "$(date) - Created project '${PROJ_FOLDER}'" > ${project_log}
 
 	# return to initial folder
 	cd ..
