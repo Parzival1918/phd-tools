@@ -268,7 +268,7 @@ for sg in sgs:
     )
     c += 1
 
-# check if there is a file "extra_structures.csv" with extra structures to plot
+# check if there is a file \"extra_structures.csv\" with extra structures to plot
 # This file should have the format: name, density, energy, spacegroup
 extra_file = Path('extra_structures.csv')
 if extra_file.is_file():
@@ -280,7 +280,7 @@ if extra_file.is_file():
 			y=row['energy'] - min_y,
 			label=row['name'],
 			s=10,
-			marker='x',
+			marker='*',
 		)
 
 plt.xlabel('Density (g cm$^{-3}$)')
@@ -313,9 +313,71 @@ for structure in \${compare_structures[@]}; do
 	let \"i++\"
 done
 	"
-	EXTRAS_REPLACE_MOL_SCRIPT="#!/bin/bash
+	EXTRAS_REPLACE_MOL_SCRIPT="from cspy.crystal import Crystal
+from cspy.chem import Molecule
+import sys
+
+if len(sys.argv) == 1:
+	print(\"Call this program with INPUT_STRUCT, then OUTPUT_STRUCT, and following all the molecules needed (one per asymmetric unit).\")
+	sys.exit(0)
+
+input_struct = sys.argv[1]
+output_struct = sys.argv[2]
+molecules = sys.argv[3:]
+
+original_structure = Crystal.load(input_struct)
+new_molecules = []
+for mol in molecules:
+    new_molecule = Molecule.from_xyz_file(mol)
+    new_molecules.append(new_molecule)
+
+new_structure = original_structure.replace_molecules(new_molecules)
+new_structure.to_shelx_file(output_struct)
 	"
 	EXTRAS_MINIMISE_STRUCTURE_SCRIPT="#!/bin/bash
+
+source ~/.bashrc
+conda activate cspy
+
+crystal=\${1:?\"Enter a crystal file to optimise\"}
+
+echo \"Calling cspy-opt with:\"
+CHARGES=\${2:-\"0\"}
+echo \"  --charges \${CHARGES}\" 
+POTENTIAL=\${3:-\"fit\"}
+echo \"  --potential \${POTENTIAL}\" 
+BASIS=\${4:-\"6-311G**\"}
+echo \"  --basis-set \${BASIS}\" 
+METHOD=\${5:-\"B3LYP\"}
+echo \"  --method \${METHOD}\" 
+EXTRA_FLAGS=\${6:-\"\"}
+echo \"  extra args: \${EXTRA_FLAGS}\"
+
+cspy-opt --charges \${CHARGES} -p \${POTENTIAL} -b \${BASIS} -m \${METHOD} \${EXTRA_FLAGS} \${crystal}
+	"
+	EXTRAS_CALCULATE_DENSITY_SCRIPT="from cspy import Crystal
+import sys
+
+if len(sys.argv) == 1:
+	print(\"Call this program with all the crystal files you want to calculate the density of.\")
+	sys.exit(0)
+
+for file in sys.argv[1:]:
+    crystal = Crystal.load(file)
+    print(f"{file}: {crystal.density} g/cm^3")
+	"
+	EXTRAS_CHANGE_FORMAT_SCRIPT="from cspy.crystal import Crystal
+import sys
+
+if len(sys.argv) == 1:
+	print(\"Call this program with an input crystal and the name of the output one with a file extension.\")
+	sys.exit(0)
+
+input_struct = sys.argv[1]
+output_struct = sys.argv[2]
+
+original_structure = Crystal.load(input_struct)
+original_structure.save(output_struct)
 	"
 
 	# create project folder
@@ -378,6 +440,30 @@ produce the files:
 	# create contents of FOLDER_3
 	cd ${FOLDER_3}
 	echo "${CSP_JOB_SCRIPT}" > job_submit.sh
+	echo "[dmacrys]
+timeout = 1200.0
+
+[pmin]
+timeout = 1200.0
+
+[neighcrys]
+potential = \"fit\"
+potential_type = \"F\"
+potential_filename = \"fit.pots\"
+
+[[csp_minimization_step]]
+kind = \"pmin\"
+electrostatics = \"charges\"
+
+[[csp_minimization_step]]
+kind = \"dmacrys\"
+electrostatics = \"charges\"
+CONP = true
+PRES = \"0.1 GPa\"
+
+[[csp_minimization_step]]
+kind = \"dmacrys\"
+electrostatics = \"multipoles\"" > cspy.toml
 	echo "# ${FOLDER_3}
 
 This is the CSP step in which crystals are created with a QR
@@ -430,6 +516,21 @@ accurate energy methods.
 	cd ${FOLDER_7}
 	echo "${FIND_MATCHES_SCRIPT}" > find_matches.sh
 	chmod +x find_matches.sh
+	echo "[compack]
+allow_artificial_inversion: True,
+allow_molecular_differences: False,
+angle_tolerance: 20,
+distance_tolerance: 0.2,
+ignore_bond_counts: False,
+ignore_bond_types: True,
+ignore_hydrogen_counts: False,
+ignore_hydrogen_positions: True,
+ignore_smallest_components: False,
+match_entire_packing_shell: False,
+molecular_similarity_threshold: 0.2,
+packing_shell_size: 30,
+show_highest_similarity_result: True,
+skip_when_identifiers_equal: True" > cspy.toml
 	echo "# ${FOLDER_7}
 
 Find if some user-defined structures are present in the CSP
@@ -441,19 +542,22 @@ have been generated.
 	# create contents of FOLDER_8
 	mkdir ${FOLDER_8}
 	cd ${FOLDER_8}
-	echo "${EXTRAS_REPLACE_MOL_SCRIPT}" > replace_mol.sh
-	chmod +x replace_mol.sh
+	echo "${EXTRAS_REPLACE_MOL_SCRIPT}" > replace_mol.py
 	echo "${EXTRAS_MINIMISE_STRUCTURE_SCRIPT}" > minimise_structure.sh
 	chmod +x minimise_structure.sh
+	echo "${EXTRAS_CALCULATE_DENSITY_SCRIPT}" > density.py
+	echo "${EXTRAS_CHANGE_FORMAT_SCRIPT}" > change_crystal_format.py
 	echo "# ${FOLDER_8}
 
 Extra folder for any additional scripts or files that can be
 used in the project:
 
-- \`replace_mol.sh\` Script to replace the asymmetric unit of a
-crystal with a different molecule.
-- \`minimise_structure.sh\` Script to minimise a structure.
-Modifdy the cspy.toml file to change the minimisation settings.
+- \`replace_mol.py\` Script to replace the asymmetric unit(s) of 
+a crystal with a different molecule.
+- \`minimise_structure.sh\` Script to optimise a structure.
+- \`density.py\` Script to calculate the density of crystals.
+- \`change_crystal_format.py\` Script to change the crystal file
+format.
 	" > README.md
 	cd ..
 
