@@ -293,7 +293,7 @@ print(\"Landscape saved to Landscape.png\")
 	" # inspired from https://mol-cspy.readthedocs.io/en/latest/bb_wikipages/Scripts%20for%20CSPy.html
 	FIND_MATCHES_SCRIPT="#!/bin/bash
 
-local output_folder=\${1:?\"Usage: \$0 OUTPUT_FOLDER] [DATABASE]\"}
+local output_folder=\${1:?\"Usage: \$0 [OUTPUT_FOLDER] [DATABASE]\"}
 local database=\${2:?\"Usage: \$0 [OUTPUT_FOLDER] [DATABASE]\"}
 local compare_structures=\${@:3}
 
