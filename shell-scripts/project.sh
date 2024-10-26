@@ -52,6 +52,7 @@ function project() {
 
         logs)
             echo "Print logs"
+            ;;
 
         *)
             tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " Unknown command ${command}"
