@@ -4,6 +4,7 @@ function project() {
     # First check that a file called project.info exists
     # in the current folder or one of its parents
     local project_location=""
+    local rundir=${PWD}
     local path=${PWD}
     while [[ $path != / ]]; do
         if [ -f ${path}/project.info ]; then
@@ -45,13 +46,20 @@ function project() {
             tput bold; tput setaf 3; echo -n "Running command: "; tput sgr0; echo $runcommand
             tput bold; tput setaf 3; echo -n "Command stdout and stderr logged to: "; tput sgr0; echo $logfile 
 
-            echo "[$datetime]: $runcommand" >> $project_location/project.logs
+            echo "[$datetime at $rundir]: $runcommand" >> $project_location/project.logs
 
-            $runcommand 2>&1 | tee $loglocation
+            echo "Command: $runcommand" > $loglocation
+            echo "At folder: $rundir" >> $loglocation
+
+            $runcommand 2>&1 | tee -a $loglocation
             ;;
 
         logs)
-            echo "Print logs"
+            local logstoprint=${2:-10}
+            tput bold; tput setaf 3; echo -n "Printing the last"; tput sgr0; echo -n " $logstoprint"
+            tput bold; tput setaf 3; echo " log entries"; tput sgr0
+
+            tail -$logstoprint $project_location/project.logs
             ;;
 
         *)
