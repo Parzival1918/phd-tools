@@ -9,10 +9,7 @@ tput bold; tput setaf 3; echo "Adding to .bashrc sourcing of phd-tools"; tput sg
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-bashrc_text="
->>>phd-tools managed block START<<<
+echo "# >>>phd-tools managed block START<<<
 source $SCRIPT_DIR/shell-scripts/add_to_bashrc.sh
->>>phd-tools managed block END<<<
-"
-
-echo $bashrc_text >> ~/.bashrc
+# >>>phd-tools managed block END<<<
+" >> ~/.bashrc
