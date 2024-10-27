@@ -55,6 +55,11 @@ function project() {
             ;;
 
         logs)
+            if [ ! -f $project_location/project.logs ]; then
+                tput bold; tput setaf 1; echo -n "ERROR:"; tput sgr0; echo " No project.logs file found. Maybe you didn't log any command?"
+                return 1
+            fi
+
             local logstoprint=${2:-10}
             tput bold; tput setaf 3; echo -n "Printing the last"; tput sgr0; echo -n " $logstoprint"
             tput bold; tput setaf 3; echo " log entries"; tput sgr0
