@@ -21,11 +21,19 @@ function project() {
         return 1
     fi
 
-    local command=${1:?"You must use one of the following commands: info, log, logs"}
+    local command=${1:?"You must use one of the following commands: info, init, log, logs"}
 
     case $command in
         info)
+            tput bold; tput setaf 3; echo "Contents of project.info file:"; tput sgr0
             cat $project_location/project.info
+            ;;
+
+        init)
+            local project_info="project.info"
+            echo "PROJ_NAME=${PROJ_FOLDER}" > ${project_info}
+            echo "PROJ_CREATION_TIME=$(date +"%Y-%m-%d-%T")" >> ${project_info}
+            echo "PROJ_LOCATION=${PWD}" >> ${project_info}
             ;;
 
         log)

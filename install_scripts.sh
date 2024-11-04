@@ -21,7 +21,7 @@ tput bold; tput setaf 3; echo -n " to target directory: "; tput sgr0; echo $inst
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 #copy or link files to target dir
-script_names=(cancel.sh create_config.sh new_csp.sh new_thresh.sh project.sh)
+script_names=(cancel.sh create_config.sh new_csp.sh new_thresh.sh project.sh utility_scripts.sh)
 for script_name in "${script_names[@]}"; do
     script_path="$SCRIPT_DIR/shell-scripts/$script_name"
     installation_path="$installation_dir/$script_name"

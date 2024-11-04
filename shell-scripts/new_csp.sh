@@ -606,6 +606,7 @@ format.
 	# create project.info file
 	local project_info="project.info"
 	echo "PROJ_NAME=${PROJ_FOLDER}" > ${project_info}
+	echo "PROJ_CREATION_TIME=$(date +"%Y-%m-%d-%T")" >> ${project_info}
 	echo "PROJ_LOCATION=${PWD}" >> ${project_info}
 	echo "MOLECULES=${MOLECULES[@]}" >> ${project_info}
 
