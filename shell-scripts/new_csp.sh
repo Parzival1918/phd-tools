@@ -379,6 +379,47 @@ output_struct = sys.argv[2]
 original_structure = Crystal.load(input_struct)
 original_structure.save(output_struct)
 	"
+	EXTRAS_VASP_SCRIPT="from cspy.formats.vasp_input import create_vasp_inputs
+from cspy import Crystal
+import sys
+
+if len(sys.argv) == 1:
+	print(\"Call this program with an input crystal.\")
+	print(\"Make sure to change the values of kspacing, potcar_path and incar_settings.\")
+	sys.exit(0)
+
+crys_file=sys.argv[1]
+settings={
+	\"kspacing\": 0.01, # float
+	\"potcar_path\": \"/home/pjr1u24/sources/VASP/potpaw_PBE\", 
+	\"incar_settings\": {
+		\"ENCUT\" = 500.000000,
+		\"KSPACING\" = 0.314150,
+		\"EDIFF\" = 1.00e-04,
+		\"GGA\" = \"PE\",
+		\"PREC\" = \"Accurate\",
+		\"KPAR\" = 1,
+		\"NELMIN\" = 5,
+		\"NSW\" = 0,
+		\"IVDW\" = 12,
+		\"NCORE\" = 40,
+		\"LCHARG\" = \".FALSE.\",
+		\"LWAVE\" = \".FALSE.\",
+		\"LREAL\" = \"Auto\",
+	}
+}
+working_directory=\".\"
+
+print(\"Creating VASP input files using:\")
+print(settings)
+
+crystal = Crystal.load(crys_file)
+create_vasp_inputs(
+	crystal,
+	working_directory,
+	settings
+)
+	"
 
 	# create project folder
 	mkdir ${PROJ_FOLDER}
@@ -547,6 +588,7 @@ have been generated.
 	chmod +x minimise_structure.sh
 	echo "${EXTRAS_CALCULATE_DENSITY_SCRIPT}" > density.py
 	echo "${EXTRAS_CHANGE_FORMAT_SCRIPT}" > change_crystal_format.py
+	echo "${EXTRAS_VASP_SCRIPT}" > create_vasp_input.py
 	echo "# ${FOLDER_8}
 
 Extra folder for any additional scripts or files that can be
