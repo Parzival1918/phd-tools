@@ -92,18 +92,13 @@ def __(alt, df2_new, mo):
 
 
 @app.cell
-def __(chart1):
-    chart1
-    return
-
-
-@app.cell
 def __(chart1, df2):
     matching_values_ids = []
-    for match, check in zip(chart1.value["matches"], chart1.value["match"]):
-        if check:
-            for m in match:
-                matching_values_ids.append(m)
+    if not chart1.value.empty:
+        for match, check in zip(chart1.value["matches"], chart1.value["match"]):
+            if check:
+                for m in match:
+                    matching_values_ids.append(m)
 
     _matches = []
     for _mol_id in df2["id"]:
@@ -117,8 +112,8 @@ def __(chart1, df2):
 
 
 @app.cell
-def __(chart2):
-    chart2
+def __(chart1, chart2, mo):
+    mo.hstack([chart1, chart2])
     return
 
 
