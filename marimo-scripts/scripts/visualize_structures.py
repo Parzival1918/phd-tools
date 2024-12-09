@@ -48,7 +48,7 @@ def __(alt, df, group_select, min_step_select, mo):
         sec = df
     else:
         sec = df[df["minimization_step"] == min_step_select.value]
-        
+
     _chart = (
         alt.Chart(sec).mark_point().encode(
             alt.X("density").scale(zero=False, padding=2.0),
